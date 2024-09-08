@@ -1,16 +1,27 @@
 # boot.py - - runs on boot-up
-import network
+import uota
+import machine
+import secrets
 
-ssid = ''
-passwd = ''
+ssid = secrets.ssid
+passwd = secrets.passwd
 
-station = network.WLAN(network.STA_IF)
+def do_connect():
+    import network
+    network.country("PL")
+    wlan = network.WLAN(network.STA_IF)
+    wlan.active(False)
+    wlan.active(True)
+    # wlan.config(txpower=5)
+    if not wlan.isconnected():
+        print('Connecting to network...')
+        wlan.connect(ssid, passwd)
+        while not wlan.isconnected():
+            pass
+    print('network config:', wlan.ifconfig())
 
-station.active(True)
-station.connect(ssid, passwd)
+do_connect()
 
-while station.isconnected() == False:
-    pass
-
-print('Polaczono')
-print(station.ifconfig())
+if do_ota_update and uota.check_for_updates():
+      uota.install_new_firmware()
+      machine.reset()

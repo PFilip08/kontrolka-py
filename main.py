@@ -2,8 +2,9 @@
 import utime
 from machine import Pin
 import urequests
+import secrets
 
-api_url = "http://mrufka.local:3000/api"
+api_url = secrets.api_url
 
 leds = {
     # duże, do funkcji
@@ -30,9 +31,9 @@ buttons = {
 }
 
 def button_callback(pin, button_name):
-    if pin.value() == 0:  # Sprawdzamy, czy przycisk jest naciśnięty (stan niski)
+    if pin.value() == 0:
         try:
-            response = urequests.post(api_url+'/buttons', json={"button": button_name})
+            response = urequests.post(api_url+'/button', json={"button": button_name})
             print(f"Wysłano żądanie do API z {button_name}: {response.status_code}")
             response.close()
         except Exception as e:
@@ -40,25 +41,23 @@ def button_callback(pin, button_name):
 
 def check_api_status():
     try:
-        response = urequests.get(api_url+'/pc_status')
+        response = urequests.get(api_url+'/led')
         if response.status_code == 200:
             data = response.json()
-            # Zakładamy, że API zwraca JSON z kluczami "led1_status", "led2_status", "led3_status"
             for led_name, led_pin in leds.items():
-                if data.get(f"{led_name}_status") == "on":
-                    led_pin.on()  # Zapala diodę LED
+                if data.get(f"{led_name}"):
+                    led_pin.on()
                 else:
-                    led_pin.off()  # Gasi diodę LED
+                    led_pin.off()
         response.close()
     except Exception as e:
         print("Błąd przy odczytywaniu statusu z API:", e)
 
 
-# Konfiguracja przerwań dla każdego przycisku
 for button_name, button_pin in buttons.items():
     button_pin.irq(trigger=Pin.IRQ_FALLING, handler=lambda pin, name=button_name: button_callback(pin, name))
 
-# Program główny
+
 while True:
     check_api_status()
     utime.sleep(5)

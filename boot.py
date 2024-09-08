@@ -5,6 +5,7 @@ import secrets
 
 ssid = secrets.ssid
 passwd = secrets.passwd
+do_ota_update = secrets.do_ota_update
 
 def do_connect():
     import network
@@ -23,5 +24,7 @@ def do_connect():
 do_connect()
 
 if do_ota_update and uota.check_for_updates():
-      uota.install_new_firmware()
-      machine.reset()
+    print('Updating uota...')
+    uota.install_new_firmware()
+    machine.reset()
+else: print('no update');

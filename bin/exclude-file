@@ -1,0 +1,6 @@
+venv
+.git
+.gitignore
+.idea
+secrets.example.py
+bin

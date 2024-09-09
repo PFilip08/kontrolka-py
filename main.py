@@ -26,8 +26,11 @@ buttons = {
 
     # małe, do pc
     "sw1": Pin(12, Pin.IN, Pin.PULL_UP), # GPIO 12
+    "sw1b": Pin(13, Pin.IN, Pin.PULL_UP), # GPIO 13
     "sw2": Pin(11, Pin.IN, Pin.PULL_UP), # GPIO 11
-    "sw3": Pin(9, Pin.IN, Pin.PULL_UP) # GPIO 9
+    "sw2b": Pin(14, Pin.IN, Pin.PULL_UP), # GPIO 14
+    "sw3": Pin(9, Pin.IN, Pin.PULL_UP), # GPIO 9
+    "sw3b": Pin(15, Pin.IN, Pin.PULL_UP) # GPIO 15
 }
 
 def button_callback(pin, button_name):
@@ -60,4 +63,4 @@ for button_name, button_pin in buttons.items():
 
 while True:
     check_api_status()
-    utime.sleep(5)
+    utime.sleep(2)

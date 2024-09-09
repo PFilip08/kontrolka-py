@@ -1,4 +1,5 @@
 # boot.py - - runs on boot-up
+import time
 import uota
 import machine
 import secrets
@@ -18,12 +19,33 @@ def do_connect():
         print('Connecting to network...')
         wlan.connect(ssid, passwd)
         while not wlan.isconnected():
+            l1 = machine.Pin(1, machine.Pin.OUT)
+            l2 = machine.Pin(2, machine.Pin.OUT)
+            l3 = machine.Pin(4, machine.Pin.OUT)
+            l1.on()
+            time.sleep(1)
+            l2.on()
+            time.sleep(1)
+            l3.on()
+            time.sleep(1)
+            l1.off()
+            l2.off()
+            l3.off()
+            time.sleep(1)
             pass
     print('network config:', wlan.ifconfig())
 
 do_connect()
 
 if do_ota_update and uota.check_for_updates():
+    led=machine.Pin(1, machine.Pin.OUT)
+    led.on()
+    time.sleep(0.5)
+    led.off()
+    time.sleep(0.5)
+    led.on()
+    time.sleep(0.5)
+    led.off()
     print('Updating uota...')
     uota.install_new_firmware()
     machine.reset()

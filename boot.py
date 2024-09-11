@@ -44,25 +44,26 @@ def check_wifi_connection():
         print('Wi-Fi disconnected, trying to reconnect...')
         do_connect()
 
+def ota_update():
+    try:
+        if do_ota_update and uota.check_for_updates():
+            led = machine.Pin(1, machine.Pin.OUT)
+            led.on()
+            time.sleep(0.5)
+            led.off()
+            time.sleep(0.5)
+            led.on()
+            time.sleep(0.5)
+            led.off()
+            print('Updating uota...')
+            uota.install_new_firmware()
+            machine.reset()
+        else: print('no update');
+    except Exception as e:
+            print("Błąd przy łączeniu z serwerem OTA:", e)
+
 do_connect()
-
-try:
-    if do_ota_update and uota.check_for_updates():
-        led = machine.Pin(1, machine.Pin.OUT)
-        led.on()
-        time.sleep(0.5)
-        led.off()
-        time.sleep(0.5)
-        led.on()
-        time.sleep(0.5)
-        led.off()
-        print('Updating uota...')
-        uota.install_new_firmware()
-        machine.reset()
-    else: print('no update');
-except Exception as e:
-        print("Błąd przy łączeniu z serwerem OTA:", e)
-
+ota_update()
 
 import webrepl
 webrepl.start()

@@ -3,7 +3,8 @@ import utime
 from machine import Pin
 import urequests
 import secrets
-from boot import check_wifi_connection
+from boot import check_wifi_connection, ota_update
+import _thread
 
 api_url = secrets.api_url
 api_ok = True
@@ -60,6 +61,8 @@ def check_api_status():
 
 def api_unreachable():
     global api_ok
+    for led_pin in leds.values():
+        led_pin.off()
     l3 = leds["led3"]
 
     while not api_ok:
@@ -68,13 +71,20 @@ def api_unreachable():
         time.sleep(1)
         l3.off()
         time.sleep(1)
-        check_api_status()  # Ciągle sprawdzaj, czy API wróciło
+        check_api_status()
 
     print("Połączenie z API przywrócone")
 
+def periodic_ota_update():
+    while True:
+        print("Sprawdzanie aktualizacji OTA...")
+        ota_update()
+        time.sleep(30)
 
 for button_name, button_pin in buttons.items():
     button_pin.irq(trigger=Pin.IRQ_FALLING, handler=lambda pin, name=button_name: button_callback(pin, name))
+
+_thread.start_new_thread(periodic_ota_update, ())
 
 while True:
     check_wifi_connection()

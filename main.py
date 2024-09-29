@@ -94,4 +94,4 @@ while True:
     else:
         api_unreachable()
 
-    utime.sleep(2)
+    utime.sleep(10)

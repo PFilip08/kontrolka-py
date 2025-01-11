@@ -6,6 +6,6 @@ echo "Version: $VERSION"
 echo "Creating OTA package..."
 tar --exclude-from=exclude-file -zcvf out/kontrolka-py-"$VERSION".tgz ../
 echo "OTA package created: out/kontrolka-py-$VERSION.tgz"
-echo -e "$VERSION;kontrolka-py-$VERSION.tgz\n// $(date)" > out/latest
+echo "$VERSION;kontrolka-py-$VERSION.tgz" > out/latest
 echo "Latest version file updated: out/latest"
 echo "Done."

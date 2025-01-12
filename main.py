@@ -1,4 +1,3 @@
-import time
 import utime
 from machine import Pin
 import urequests
@@ -8,6 +7,11 @@ import _thread
 
 api_url = secrets.api_url
 api_ok = True
+debounce_time = 200  # milliseconds
+long_press_time = 2500  # milliseconds
+last_button_press = {}
+button_press_start = {}
+stop_blinking = False
 
 leds = {
     "led1": Pin(1, Pin.OUT),
@@ -31,20 +35,42 @@ buttons = {
 }
 
 
-def button_callback(pin, button_name):
+def button_callback(pin):
+    button_name = [name for name, p in buttons.items() if p == pin][0]
+    current_time = utime.ticks_ms()
     if pin.value() == 0:
-        try:
-            response = urequests.post(api_url + '/button', json={"button": button_name})
-            print(f"Wysłano żądanie do API z {button_name}: {response.status_code}")
-            response.close()
-        except Exception as e:
-            print(f"Błąd przy wysyłaniu żądania dla {button_name}: {e}")
+        button_press_start[button_name] = current_time
+    else:
+        if button_name in button_press_start:
+            press_duration = utime.ticks_diff(current_time, button_press_start[button_name])
+            if press_duration > long_press_time:
+                handle_long_press(button_name)
+            else:
+                handle_short_press(button_name)
+            del button_press_start[button_name]
 
+def handle_short_press(button_name):
+    try:
+        response = urequests.post(api_url + '/button', json={"button": button_name}, timeout=5)
+        print(f"Wysłano żądanie do API z {button_name}: {response.status_code}")
+        response.close()
+    except Exception as e:
+        print(f"Błąd przy wysyłaniu żądania dla {button_name}: {e}")
+
+def handle_long_press(button_name):
+    long_button_name = f"{button_name}_long"
+    print(f"Trzymanie przycisku: {button_name}")
+    try:
+        response = urequests.post(api_url + '/button', json={"button": long_button_name}, timeout=5)
+        print(f"Wysłano żądanie do API z {long_button_name}: {response.status_code}")
+        response.close()
+    except Exception as e:
+        print(f"Błąd przy wysyłaniu żądania dla {long_button_name}: {e}")
 
 def check_api_status():
-    global api_ok
+    global api_ok, stop_blinking
     try:
-        response = urequests.get(api_url + '/led')
+        response = urequests.get(api_url + '/led', timeout=5)
         if response.status_code == 200:
             data = response.json()
             for led_name, led_pin in leds.items():
@@ -53,24 +79,32 @@ def check_api_status():
                 else:
                     led_pin.off()
             api_ok = True
+            stop_blinking = True
+        else:
+            raise Exception(f"Nieprawidłowy status odpowiedzi z API: {response.status_code}")
         response.close()
     except Exception as e:
         print("Błąd przy odczytywaniu statusu z API:", e)
         api_ok = False
 
+def blink_led(led_pin):
+    global stop_blinking
+    while not api_ok and not stop_blinking:
+        led_pin.on()
+        utime.sleep(1)
+        led_pin.off()
+        utime.sleep(1)
 
 def api_unreachable():
-    global api_ok
+    global api_ok, stop_blinking
+    stop_blinking = False
     for led_pin in leds.values():
         led_pin.off()
-    l3 = leds["led3"]
+    led_pin = leds["led3"]
+    _thread.start_new_thread(blink_led, (led_pin,))
 
     while not api_ok:
         print("API nieosiągalne, próba ponownego połączenia...")
-        l3.on()
-        time.sleep(1)
-        l3.off()
-        time.sleep(1)
         check_api_status()
 
     print("Połączenie z API przywrócone")
@@ -79,10 +113,10 @@ def periodic_ota_update():
     while True:
         print("Sprawdzanie aktualizacji OTA...")
         ota_update()
-        time.sleep(30)
+        utime.sleep(30)
 
 for button_name, button_pin in buttons.items():
-    button_pin.irq(trigger=Pin.IRQ_FALLING, handler=lambda pin, name=button_name: button_callback(pin, name))
+    button_pin.irq(trigger=Pin.IRQ_FALLING | Pin.IRQ_RISING, handler=button_callback)
 
 _thread.start_new_thread(periodic_ota_update, ())
 

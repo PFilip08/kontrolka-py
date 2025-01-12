@@ -46,7 +46,9 @@ def check_wifi_connection():
 
 def ota_update():
     try:
-        if do_ota_update and uota.check_for_updates():
+        button_pin = machine.Pin(3, machine.Pin.IN, machine.Pin.PULL_UP) # button3
+        version_check = not button_pin.value() == 0  # Disable version check if button is held down
+        if do_ota_update and uota.check_for_updates(version_check=version_check):
             led = machine.Pin(1, machine.Pin.OUT)
             led.on()
             time.sleep(0.5)
@@ -58,9 +60,10 @@ def ota_update():
             print('Updating uota...')
             uota.install_new_firmware()
             machine.reset()
-        else: print('no update');
+        else:
+            print('no update')
     except Exception as e:
-            print("Błąd przy łączeniu z serwerem OTA:", e)
+        print("Błąd przy łączeniu z serwerem OTA:", e)
 
 do_connect()
 ota_update()
